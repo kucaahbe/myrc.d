@@ -1,0 +1,17 @@
+install {
+  # good link
+  ln `zshrc` `~/.zshrc`
+  ln `ls_colors` `~/.ls_colors`
+
+  # wrong link
+  ln `zshenv` `~/.zshenv`
+
+  # ~/.zprofile does not exists
+  ln `zprofile` `~/.zprofile`
+
+  # target exists and is a directory
+  ln `zsh` `~/.zsh`
+
+  # source does not exists
+  ln `nofile` `~/.todo`
+}

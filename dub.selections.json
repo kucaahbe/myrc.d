@@ -1,0 +1,7 @@
+{
+	"fileVersion": 1,
+	"versions": {
+		"sdlite": "1.2.0",
+		"taggedalgebraic": "0.11.22"
+	}
+}

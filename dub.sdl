@@ -1,0 +1,11 @@
+name "myconfigs"
+version "0.0.0"
+description "Configs symlinking automation"
+
+authors "kucaahbe"
+copyright "Copyright © 2024, kucaahbe"
+license "MIT"
+
+dependency "sdlite" version="~>1.2.0"
+
+lflags "-ld_classic" platform="osx-x86_64"

@@ -1,0 +1,17 @@
+.dub
+/dub.settings.json
+docs.json
+__dummy.html
+docs/
+/myconfigs
+myconfigs.so
+myconfigs.dylib
+myconfigs.dll
+myconfigs.a
+myconfigs.lib
+myconfigs-test-*
+*.exe
+*.pdb
+*.o
+*.obj
+*.lst
