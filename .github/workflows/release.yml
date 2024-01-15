@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version'
+        required: true
+        type: string
+  # workflow_run:
+  #   workflows: [Build]
+  #   types: [completed]
+  # push:
+  #   tags: v**
+
+jobs:
+  print-version:
+    runs-on: ubuntu-latest
+    # if:  ${{ inputs.print_tags }} 
+    steps:
+      - name: Print the input version to STDOUT
+        run: echo  The version is ${{ inputs.version }} 
+      - name: Test debug message
+        run: echo "::debug::Set the Octocat variable"
+  # on-success:
+  #   runs-on: ubuntu-latest
+  #   #if: ${{ github.event.workflow_run.conclusion == 'success' && startsWith(github.ref, 'refs/tags/') }}
+  #   if: ${{ github.event.workflow_run.conclusion == 'success' }}
+  #   steps:
+  #     - env:
+  #         TEST: ${{ github.ref_type }}
+  #       run: 'echo "The triggering workflow passed: $TEST"'
+  # on-failure:
+  #   runs-on: ubuntu-latest
+  #   if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+  #   steps:
+  #     - run: echo 'The triggering workflow failed'
+  #
+  #
+  # https://github.com/marketplace/actions/publish-release

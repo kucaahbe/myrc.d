@@ -1,8 +1,9 @@
-name: Build
+name: 'Build'
 
 on:
   push:
     branches: [ "main" ]
+    tags: 'v**'
   pull_request:
     branches: [ "main" ]
 
@@ -11,18 +12,20 @@ permissions:
 
 jobs:
   build:
+    name: 'Build'
+
     strategy:
       fail-fast: false
       matrix:
         os:
-        - ubuntu-latest
+        - ubuntu-22.04
+        - ubuntu-20.04
         - macos-12
         - macos-11
         dc:
         - dmd-latest
         - ldc-latest
 
-    name: 'Build'
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -31,7 +34,7 @@ jobs:
       with:
         compiler: ${{ matrix.dc }}
 
-    - name: 'Build'
+    - name: 'dub build'
       run: |
         dub_configuration=application
 
@@ -49,3 +52,27 @@ jobs:
         $DC --version
 
         dub build --compiler=$DC --build=release-debug --config=$dub_configuration --verbose
+
+    - name: 'Upload binary'
+      uses: actions/upload-artifact@v3
+      with:
+        name: myrc-${{ matrix.os }}-${{ matrix.dc }}
+        path: myconfigs
+
+  start-release:
+    name: 'Schedule release'
+
+    needs: [build]
+    if: ${{ github.ref_type == 'tag' }}
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      actions: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: gh workflow run release.yml -f version=MYTAG
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
