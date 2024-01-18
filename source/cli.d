@@ -14,7 +14,8 @@ private int status_variant = 1;
 
 /** status CLI output
  * Params:
- *		args: CLI args
+ *		args = CLI args
+ *		app_config = application config
  */
 void cli_status(ref string[] args, ref Config app_config)
 {
