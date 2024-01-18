@@ -6,6 +6,8 @@ authors "kucaahbe"
 copyright "Copyright © 2024, kucaahbe"
 license "MIT"
 
+mainSourceFile "source/main.d"
+
 dependency "sdlite" version="~>1.2.0"
 
 configuration "application" {

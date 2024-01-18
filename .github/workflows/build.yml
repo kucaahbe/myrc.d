@@ -2,17 +2,26 @@ name: 'Build'
 
 on:
   push:
-    branches: [ "main" ]
-    tags: 'v**'
+    branches: '**'
+    tags: 'v[0-9]+.[0-9]+.[0-9]+'
+
   pull_request:
-    branches: [ "main" ]
+    branches: 'main'
+
+  # workflow_dispatch:
+  #   inputs:
+  #     verbose_build:
+  #       description: 'verbose build process'
+  #       type: boolean
+  #       required: true
+  #       default: false
 
 permissions:
   contents: read
 
 jobs:
   build:
-    name: 'Build'
+    name: 'Build & Test'
 
     strategy:
       fail-fast: false
@@ -34,7 +43,7 @@ jobs:
       with:
         compiler: ${{ matrix.dc }}
 
-    - name: 'dub build'
+    - name: 'dub build && dub test'
       run: |
         dub_configuration=application
 
@@ -48,10 +57,13 @@ jobs:
           fi
         fi
 
-        uname -a
-        $DC --version
+        # if [[ "${{ inputs.verbose_build }}" = "true" ]]; then
+        #   uname -a
+        #   $DC --version
+        # fi
 
-        dub build --compiler=$DC --build=release-debug --config=$dub_configuration --verbose
+        dub build --compiler=$DC --build=release-debug --config=$dub_configuration # --verbose
+        dub test --compiler=$DC --config=$dub_configuration # --verbose
 
     - name: 'Upload binary'
       uses: actions/upload-artifact@v3
