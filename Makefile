@@ -1,4 +1,4 @@
-docker_image := myconfigs-test
+docker_image := myrc-test
 
 build:
 	docker build -t $(docker_image) . && docker run --rm $(docker_image)

@@ -69,7 +69,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: myrc-${{ matrix.os }}-${{ matrix.dc }}
-        path: myconfigs
+        path: myrc
 
   start-release:
     name: 'Schedule release'

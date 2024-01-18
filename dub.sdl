@@ -1,4 +1,4 @@
-name "myconfigs"
+name "myrc"
 version "0.0.0"
 description "Configs symlinking automation"
 

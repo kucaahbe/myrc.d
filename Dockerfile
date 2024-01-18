@@ -4,7 +4,7 @@ FROM dlang2/dmd-ubuntu
 WORKDIR /app
 COPY . .
 RUN --mount=type=cache,target=/root/.dub dub build
-RUN ln -s /app/myconfigs /usr/local/bin/myconfigs
+RUN ln -s /app/myrc /usr/local/bin/myrc
 
 ARG example_dir_1=/home/dlang/dotfiles/example1
 ARG example_dir_2=/home/dlang/dotfiles/example2
@@ -24,4 +24,4 @@ RUN ln -s $example_dir_2/wrong_location1 ~/.zshenv
 
 WORKDIR $example_dir_1
 
-CMD mkdir ~/.zsh && myconfigs && myconfigs install && myconfigs && ls -la ~
+CMD mkdir ~/.zsh && myrc && myrc install && myrc && ls -la ~

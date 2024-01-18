@@ -33,7 +33,7 @@
 
 LICENSE
 README.*
-myconfigs
+myrc
 .dub/
 dub.settings.json
 dmd.conf

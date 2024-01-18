@@ -8,7 +8,7 @@ import std.conv: to;
 import config;
 
 /** program name (will be displayed in CLI messages) */
-string progname = "myconfigs";
+string progname = "myrc";
 
 private int status_variant = 1;
 
