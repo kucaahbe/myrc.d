@@ -36,5 +36,6 @@ README.*
 myconfigs
 .dub/
 dub.settings.json
+dmd.conf
 test/test.sh
 test/fake_home
