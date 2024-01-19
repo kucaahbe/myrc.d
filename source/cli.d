@@ -51,13 +51,7 @@ void cli_install(ref Config app_config)
 			output ~= " -> ";
 			output ~= symlink.source.absolute;
 		} else {
-			string backup;
-			if (symlink.destination.exists) {
-				backup = symlink.backup();
-				symlink.link();
-			} else {
-				symlink.link();
-			}
+			string backup = symlink.link();
 			output ~= " -> ";
 			output ~= symlink.source.absolute;
 			if (backup)

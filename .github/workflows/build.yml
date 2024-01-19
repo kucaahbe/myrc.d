@@ -43,7 +43,7 @@ jobs:
       with:
         compiler: ${{ matrix.dc }}
 
-    - name: 'dub build && dub test'
+    - name: 'dub build/lint/test'
       run: |
         dub_configuration=application
 
@@ -63,6 +63,7 @@ jobs:
         # fi
 
         dub build --compiler=$DC --build=release-debug --config=$dub_configuration # --verbose
+        dub lint --compiler=$DC --config=$dub_configuration # --verbose
         dub test --compiler=$DC --config=$dub_configuration # --verbose
 
     - name: 'Upload binary'

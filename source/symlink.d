@@ -6,10 +6,41 @@ import path;
 
 /** symbolic link */
 struct Symlink {
-	/** source path */
+	/** _source file [Path] */
 	Path source;
-	/** destination path */
+	/** _destination file [Path] */
 	Path destination;
+
+	/** creates new [Symlink]
+	 * Params:
+	 * 	src = source path (may be relative to current working directory)
+	 * 	dest = destination path
+	 */
+	this(string src, string dest)
+	{
+		source = Path(src);
+		destination = Path(dest);
+	}
+
+	/// initialisation could be done with strings
+	unittest
+	{
+		import std.file;
+
+		immutable auto srcPath = ".test/app/source";
+		immutable auto destPath = ".test/home/destination";
+		immutable auto cwd = getcwd();
+
+		const auto link = Symlink(srcPath, destPath);
+
+		immutable auto sourcePathAbsolute = cwd ~ '/' ~ srcPath;
+		immutable auto destinationPathAbsolute = cwd ~ '/' ~ destPath;
+
+		assert(link.source.absolute == sourcePathAbsolute,
+				link.source.absolute ~ "!=" ~ sourcePathAbsolute);
+		assert(link.destination.absolute == destinationPathAbsolute,
+				link.destination.absolute ~ "!=" ~ destinationPathAbsolute);
+	}
 
 	/** test symlink correctness
 	 * Returns: source == destination
@@ -19,18 +50,141 @@ struct Symlink {
 		return source.absolute == destinationActual;
 	}
 
-	/** creates symbolic link in the file system */
-	void link()
+	/// returns true if symlink exists and false otherwise
+	unittest
 	{
-		symlink(source.absolute, destination.absolute);
+		import std.file;
+		import test_file;
+
+		if (".test".exists) ".test".rmdirRecurse;
+		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+
+		auto srcPath = ".test/app/source";
+		auto destPath = ".test/home/destination";
+		TestFile(srcPath, "content").create;
+		TestFile(destPath).create;
+
+		auto link = Symlink(srcPath, destPath);
+
+		assert(!link.ok);
+		link.link();
+		assert(link.ok);
 	}
 
-	/** creates backup of the destination
-	 * Returns: pach of the backup file if backup was created
-   * Bugs: the name of the backup file is currently incorrect (must be
+	/** creates symbolic _link in the file system
+	 * (creates backup of the destination if it exists)
+	 * Returns: path of the backup file if backup was created
+	 * Bugs: the name of the backup file is currently incorrect (must be
 	 * `filename.TIMESTAMP.bak`)
 	 */
-	string backup()
+	string link()
+	{
+		string backupPath;
+
+		if (destination.exists)
+			backupPath = backup();
+
+		symlink(source.absolute, destination.absolute);
+
+		return backupPath;
+	}
+
+	/// **success case 1**: creates symlink when destination doesn't exist
+	unittest
+	{
+		import std.file;
+		import std.path;
+
+		if (".test".exists) ".test".rmdirRecurse;
+		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+
+		auto srcPath = ".test/app/source";
+		auto destPath = ".test/home/destination";
+
+		srcPath.dirName.mkdirRecurse;
+		destPath.dirName.mkdirRecurse;
+
+		auto link = Symlink(srcPath, destPath);
+		link.link();
+
+		assert(link.destination.absolute.isSymlink);
+		assert(link.destination.absolute.readLink == link.source.absolute);
+	}
+
+	/** **success case 2**: creates symlink when destination exists (creating backup
+	 * and returning it's path)
+	 */
+	unittest
+	{
+		import std.file;
+		import std.path;
+		import test_file;
+
+		if (".test".exists) ".test".rmdirRecurse;
+		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+
+		auto srcPath = ".test/app/source";
+		auto destPath = ".test/home/destination";
+		immutable auto cwd = getcwd();
+
+		TestFile(srcPath, "src content").create;
+		TestFile(destPath, "dest content").create;
+
+		auto link = Symlink(srcPath, destPath);
+		immutable auto backup = link.link();
+
+		immutable auto destPathBackup = cwd ~ '/' ~ destPath ~ ".bak";
+
+		assert(link.destination.absolute.isSymlink);
+		assert(link.destination.absolute.readLink == link.source.absolute);
+		assert(backup == destPathBackup, backup ~ "!=" ~ destPathBackup);
+	}
+
+	/** Returns: _actual [Path] of the destination */
+	Path actual() const
+	{
+		return Path(destinationActual);
+	}
+
+	/// actual path of the symbolic link destination
+	// TODO: cases to test:
+	// * destination doesn't exists
+	// * destination is not a symlink - this is what's done
+	// * destination is a symlink
+	unittest
+	{
+		import std.file;
+		import std.path;
+		import test_file;
+
+		if (".test".exists) ".test".rmdirRecurse;
+		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+
+		auto srcPath = ".test/app/source";
+		auto destPath = ".test/home/destination";
+		immutable auto cwd = getcwd();
+
+		TestFile(srcPath, "src content").create;
+		TestFile(destPath, "dest content").create;
+
+		const auto link = Symlink(srcPath, destPath);
+		immutable auto actualPathAbsolute = cwd ~ '/' ~ destPath;
+
+		assert(link.actual.absolute == actualPathAbsolute);
+	}
+
+	private string destinationActual() const
+	{
+		if (!destination.absolute.exists) {
+			return [];
+		} else if (destination.absolute.isSymlink) {
+			return readLink(destination.absolute).absolutePath(destination.absolute.dirName).asNormalizedPath.array;
+		} else {
+			return destination.absolute;
+		}
+	}
+
+	private string backup()
 	{
 		auto backup = destination.absolute ~ ".bak";
 		try
@@ -44,22 +198,5 @@ struct Symlink {
 			backup = "FAILED BACKUP";
 		}
 		return backup;
-	}
-
-	/** Returns: actual `Path` of the desctination */
-	Path actual()
-	{
-		return Path(destinationActual);
-	}
-
-	private string destinationActual()
-	{
-		if (!destination.absolute.exists) {
-			return [];
-		} else if (destination.absolute.isSymlink) {
-			return readLink(destination.absolute).absolutePath(destination.absolute.dirName).asNormalizedPath.array;
-		} else {
-			return destination.absolute;
-		}
 	}
 }

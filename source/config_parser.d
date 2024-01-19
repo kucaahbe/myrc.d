@@ -62,8 +62,8 @@ private void processSDLNode(ref SDLNode node, ref Config config)
 					auto values = child_node.values;
 					if (values.length == 2 && values.all!"a.isText") {
 						config.symlinks ~= [Symlink(
-								Path(values[0].textValue),
-								Path(values[1].textValue)
+								values[0].textValue,
+								values[1].textValue
 								)];
 					} else {
 						// TODO: replace TODO with ln content: "ln "val1""

@@ -7,12 +7,12 @@ struct Path
 {
 	/** original (may be relative) path */
 	string orig;
-	/** abosulute path of the `orig` */
+	/** an _absolute path of the [orig] */
 	string absolute;
 
-	/** creates Path
+	/** creates [Path]
 	* Params:
-	* 		path = `orig`
+	* 		path = [orig]
 	*/
 	this(string path)
 	{
@@ -20,21 +20,111 @@ struct Path
 		absolute = orig.expandTilde.absolutePath().asNormalizedPath().array;
 	}
 
-	/** Returns: true if Path exists in a file system */
-	bool exists()
+	/// _path processing
+	unittest
+	{
+		import std.file;
+		import std.process;
+
+		environment["HOME"] = "/my/home";
+		immutable auto cwd = getcwd();
+		immutable auto pathAbsolute = cwd ~ '/' ~ "file";
+
+		// expands tilde
+		auto path = Path("~/file");
+		assert(path.absolute == "/my/home/file", path.absolute ~ "!=" ~ "/my/home/file");
+
+		// absolute path
+		path = Path("file");
+		assert(path.absolute == pathAbsolute, path.absolute ~ "!=" ~ pathAbsolute);
+
+		// normalise path
+		path = Path("./file");
+		assert(path.absolute == pathAbsolute, path.absolute ~ "!=" ~ pathAbsolute);
+	}
+
+	/** Returns: true if [Path] _exists in a file system */
+	bool exists() inout
 	{
 		return absolute.exists;
 	}
 
-	/** Returns: true if Path is a directory in a file system */
-	bool isDir()
+	/// returns true if [absolute] _exists
+	unittest
 	{
-		return absolute.isDir;
+		import std.file;
+		import std.process;
+		import test_file;
+
+		if (".test".exists) ".test".rmdirRecurse;
+		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+
+		immutable auto file_path = ".test/app/source";
+
+		const auto path = Path(file_path);
+		assert(!path.exists);
+
+		TestFile(file_path, "content").create;
+
+		assert(path.exists);
 	}
 
-	/** Returns: true if Path is a symbolic link in a file system */
-	bool isSymlink()
+	/** Returns: true if [Path] is a directory in a file system */
+	bool isDir() inout
 	{
-		return absolute.isSymlink;
+		return exists && absolute.isDir;
+	}
+
+	/// returns true if [absolute] exists and is a directory
+	unittest
+	{
+		import std.file;
+		import std.process;
+		import test_file;
+
+		if (".test".exists) ".test".rmdirRecurse;
+		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+
+		immutable auto dir_path = ".test/app";
+
+		const auto path = Path(dir_path);
+		assert(!path.isDir);
+
+		dir_path.mkdirRecurse;
+
+		assert(path.isDir);
+	}
+
+	/** Returns: true if [Path] is a symbolic link in a file system */
+	bool isSymlink() inout
+	{
+		return exists && absolute.isSymlink;
+	}
+
+	/// returns true if [absolute] exists and is a symbolic link
+	unittest
+	{
+		import std.file;
+		import std.process;
+		import test_file;
+
+		if (".test".exists) ".test".rmdirRecurse;
+		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+
+		immutable auto dir_path = ".test/app";
+
+		const auto path = Path(dir_path);
+		assert(!path.isSymlink);
+
+		dir_path.mkdirRecurse;
+		assert(!path.isSymlink);
+
+		TestFile(dir_path~'/'~"file", "content");
+		assert(!path.isSymlink);
+
+		remove(path.absolute);
+		symlink("other_file_actually_doesnt_exist_but_who_cares", path.absolute);
+
+		assert(path.isSymlink);
 	}
 }
