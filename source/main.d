@@ -13,7 +13,14 @@ int main(string[] args)
 	progname = args[0].asNormalizedPath.array.baseName();
 	const auto configFile = Path("install.sdl");
 
-	parse_config(configFile, app_config);
+	string[] warnings;
+	try warnings = parse_config(configFile, app_config);
+	catch (ConfigFileException e)
+	{
+		cli_error(e.msg);
+		cli_fail();
+	}
+	foreach (ref w ; warnings) cli_warning(w);
 
 	if (args.length >= 2) {
 		switch (args[1]) {

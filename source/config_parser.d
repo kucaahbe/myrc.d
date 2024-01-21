@@ -4,7 +4,8 @@ import std.file: exists, readText, FileException;
 import std.utf: UTFException;
 import std.conv: to;
 import std.algorithm.searching: all;
-import cli;
+import std.algorithm.iteration: map;
+import std.array: join;
 import symlink;
 import path;
 import config;
@@ -12,19 +13,36 @@ import config;
 private immutable INSTALL_DIRECTIVE = "install";
 private immutable LN_DIRECTIVE = "ln";
 
-/** parses [SDL](https://sdlang.org/) config and sets up config
+/** thrown when config file:
+ * * not found
+ * * can not be opened
+ * * parse error occured
+ */
+class ConfigFileException : Exception
+{
+	/** Params:
+	 *		msg = message to display to the user
+	 *		file = source file
+	 *		line = line
+	 */
+	this(string msg, string file = __FILE__, size_t line = __LINE__) {
+		super(msg, file, line);
+	}
+}
+
+/** parses [SDL](https://sdlang.org/) config_file and sets up config
  * Params:
- *		config_file = Path to config file (install.sdl)
+ *		config_file = [Path] to config file (install.sdl)
  *		config = app configuration instance
  */
-void parse_config(Path config_file, ref Config config)
+string[] parse_config(Path config_file, ref Config config)
 {
 	if (!config_file.exists()) {
-		cli_error("config file " ~ config_file.absolute ~ " does not exist");
-		cli_fail();
+		throw new ConfigFileException("config file " ~ config_file.absolute ~ " does not exist");
 	}
 
-	immutable auto processNode = (ref SDLNode node) { processSDLNode(node,config); };
+	string[] warnings;
+	immutable auto processNode = (ref SDLNode node) { processSDLNode(node,config,warnings); };
 
 	try
 	{
@@ -32,28 +50,122 @@ void parse_config(Path config_file, ref Config config)
 	}
 	catch (FileException e)
 	{
-		cli_error("failed to open config file:\n  " ~ e.msg);
-		cli_fail();
+		throw new ConfigFileException("failed to open config file:\n  " ~ e.msg);
 	}
 	catch (UTFException e)
 	{
-		cli_error("failed to read config file:\n  " ~ e.msg);
-		cli_fail();
+		throw new ConfigFileException("failed to read config file:\n  " ~ e.msg);
 	}
 	catch (SDLParserException e)
 	{
-		cli_error(
+		throw new ConfigFileException(
 				"failed to parse config file at "
 				~ config_file.absolute
 				~ ":" ~ to!string(e.location.line+1) ~ ":" ~ to!string(e.location.column+1)
 				~ ":\n  "
 				~ e.error
 				);
-		cli_fail();
 	}
+
+	return warnings;
 }
 
-private void processSDLNode(ref SDLNode node, ref Config config)
+/// _config file not found
+unittest
+{
+	import std.exception;
+	import std.regex;
+
+	auto config = Config();
+	auto path = Path("not_found");
+
+	auto exceptionMsg = collectExceptionMsg!ConfigFileException(parse_config(path, config));
+
+	assert(matchFirst(exceptionMsg, "does not exist"),
+			`"` ~ exceptionMsg ~ `" doesn't match ~/does not exist/`);
+}
+
+/// _config file parse error
+unittest
+{
+	import std.file;
+	import std.exception;
+	import std.regex;
+	import test_file;
+
+	if (".test".exists) ".test".rmdirRecurse;
+	scope(exit) if (".test".exists) ".test".rmdirRecurse;
+
+	auto config = Config();
+	auto configFilePath = ".test/app/install.sdl";
+	auto configFileContent = q"CFG
+install {
+# parse error here:
+	ln `a` b`
+}
+CFG";
+	TestFile(configFilePath, configFileContent).create;
+
+	auto exceptionMsg = collectExceptionMsg!ConfigFileException(parse_config(Path(configFilePath), config));
+
+	assert(matchFirst(exceptionMsg, "failed to parse config file at"),
+			`"` ~ exceptionMsg ~ `" doesn't match /failed to parse config file at/`);
+}
+
+/// _config file successfully parsed
+unittest
+{
+	import std.file;
+	import test_file;
+
+	if (".test".exists) ".test".rmdirRecurse;
+	scope(exit) if (".test".exists) ".test".rmdirRecurse;
+
+	immutable auto cwd = getcwd();
+	auto config = Config();
+	auto configFilePath = ".test/app/install.sdl";
+	auto configFileContent = q"CFG
+install {
+	ln `a` `b`
+}
+CFG";
+	TestFile(configFilePath, configFileContent).create;
+
+	parse_config(Path(configFilePath), config);
+	assert(config.symlinks.length == 1);
+	assert(config.symlinks[0].source.absolute == cwd~"/a");
+	assert(config.symlinks[0].destination.absolute == cwd~"/b");
+}
+
+/// _config file warnings
+unittest
+{
+	import std.file;
+	import test_file;
+
+	if (".test".exists) ".test".rmdirRecurse;
+	scope(exit) if (".test".exists) ".test".rmdirRecurse;
+
+	auto config = Config();
+	auto configFilePath = ".test/app/install.sdl";
+	auto configFileContent = q"CFG
+install {
+	ln "too" "many" "params"
+	bad_directive 1 2 3
+	ln `a` `b`
+}
+CFG";
+	TestFile(configFilePath, configFileContent).create;
+
+	auto warnings = parse_config(Path(configFilePath), config);
+
+	assert(warnings[0] == `ignoring incorrect directive: ln "too" "many" "params" (must have 2 text values)`,
+			warnings[0] ~ " is incorrect");
+	assert(warnings[1] == `ignoring unknown "bad_directive" directive`,
+			warnings[1] ~ " is incorrect");
+}
+
+private void processSDLNode(ref SDLNode node, ref Config config, ref string[] warnings)
 {
 	if (node.qualifiedName == INSTALL_DIRECTIVE) {
 		foreach (child_node ; node.children) {
@@ -66,12 +178,21 @@ private void processSDLNode(ref SDLNode node, ref Config config)
 								values[1].textValue
 								)];
 					} else {
-						// TODO: replace TODO with ln content: "ln "val1""
-						cli_warning("ignoring incorrect \"" ~ LN_DIRECTIVE ~ "\" directive at TODO (must have 2 text values)");
+						auto lnValues = values.map!((a) { return `"`~a.textValue~`"`; });
+						warnings ~= [
+							`ignoring incorrect directive: ` ~
+								LN_DIRECTIVE ~ " " ~
+								lnValues.join(" ") ~
+								` (must have 2 text values)`
+						];
 					}
 					break;
 				default:
-					cli_warning("ignoring unknown \"" ~ child_node.qualifiedName ~ "\" directive");
+					warnings ~= [
+						`ignoring unknown "` ~
+							child_node.qualifiedName ~
+							`" directive`
+					];
 					break;
 			}
 		}
