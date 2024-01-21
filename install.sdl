@@ -1,0 +1,3 @@
+install {
+  ln `myrc` `~/bin/myrc`
+}
