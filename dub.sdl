@@ -9,6 +9,7 @@ license "MIT"
 mainSourceFile "source/main.d"
 
 dependency "sdlite" version="~>1.2.0"
+dependency "openssl" version="~>3.3.3"
 
 configuration "application" {
     platforms "linux"
