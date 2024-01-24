@@ -3,10 +3,11 @@ name: 'Build'
 on:
   push:
     branches: '**'
-    tags: 'v[0-9]+.[0-9]+.[0-9]+'
 
   pull_request:
     branches: 'main'
+
+  workflow_call:
 
   # workflow_dispatch:
   #   inputs:
@@ -83,25 +84,7 @@ jobs:
         key: ${{ steps.dub-packages-restore.outputs.cache-primary-key }}
 
     - name: 'Upload binary'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: myrc-${{ matrix.os }}-${{ matrix.dc }}
         path: myrc
-
-  start-release:
-    name: 'Schedule release'
-
-    needs: [build]
-    if: ${{ github.ref_type == 'tag' }}
-
-    runs-on: ubuntu-latest
-
-    permissions:
-      actions: write
-      contents: read
-
-    steps:
-      - uses: actions/checkout@v4
-      - run: gh workflow run release.yml -f version=MYTAG
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

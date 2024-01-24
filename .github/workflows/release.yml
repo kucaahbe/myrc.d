@@ -1,40 +1,60 @@
-name: Release
+name: 'Release'
 
 on:
+  push:
+    tags: 'v[0-9]+.[0-9]+.[0-9]+'
+
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version'
+        description: 'Release version (vX.Y.Z)'
         required: true
         type: string
-  # workflow_run:
-  #   workflows: [Build]
-  #   types: [completed]
-  # push:
-  #   tags: v**
+
+permissions:
+  contents: write
 
 jobs:
-  print-version:
+  build:
+    name: 'Build & Test'
+    uses: ./.github/workflows/build.yml
+
+  release:
+    name: 'Release'
+    needs: [build]
     runs-on: ubuntu-latest
-    # if:  ${{ inputs.print_tags }} 
     steps:
-      - name: Print the input version to STDOUT
-        run: echo  The version is ${{ inputs.version }} 
-      - name: Test debug message
-        run: echo "::debug::Set the Octocat variable"
-  # on-success:
-  #   runs-on: ubuntu-latest
-  #   #if: ${{ github.event.workflow_run.conclusion == 'success' && startsWith(github.ref, 'refs/tags/') }}
-  #   if: ${{ github.event.workflow_run.conclusion == 'success' }}
-  #   steps:
-  #     - env:
-  #         TEST: ${{ github.ref_type }}
-  #       run: 'echo "The triggering workflow passed: $TEST"'
-  # on-failure:
-  #   runs-on: ubuntu-latest
-  #   if: ${{ github.event.workflow_run.conclusion == 'failure' }}
-  #   steps:
-  #     - run: echo 'The triggering workflow failed'
-  #
-  #
-  # https://github.com/marketplace/actions/publish-release
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+
+      - name: 'Set tag name'
+        id: tag
+        run: |
+          if [[ "${{ github.event_name }}" = "workflow_dispatch" ]]; then
+            tag="${{ inputs.version }}"
+          else
+            tag="${{ github.ref_name }}"
+          fi
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+
+      - name: 'Create draft release (and upload release artifacts)'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for dir in $(ls -d1 myrc-*/); do
+            dir="${dir%/}"
+            chmod +x "$dir/myrc"
+            tar -czf "$dir.tar.gz" -C "$dir" myrc
+          done
+          tag="${{ steps.tag.outputs.tag }}"
+          #body="TODO"
+          #gh release create "$tag" --draft --generate-notes --notes "$body" *.tar.gz
+          gh release create "$tag" --draft --generate-notes *.tar.gz
+
+      # the "$tag" value is incorrect for draft release (the correct one
+      # returns previous gh release command)
+      #- name: 'Publish release'
+      #  env:
+      #    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #  run: gh release edit "$tag" --draft=false
