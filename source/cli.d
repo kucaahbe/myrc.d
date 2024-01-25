@@ -51,11 +51,19 @@ void cli_install(ref Config app_config)
 			output ~= " -> ";
 			output ~= symlink.source.absolute;
 		} else {
-			string backup = symlink.link();
-			output ~= " -> ";
-			output ~= symlink.source.absolute;
-			if (backup)
-				output ~= " (backup: " ~ backup ~ ")";
+			import std.file: FileException;
+			try
+			{
+				string backup = symlink.link();
+				output ~= " -> ";
+				output ~= symlink.source.absolute;
+				if (backup)
+					output ~= " (backup: " ~ backup ~ ")";
+			}
+			catch (FileException e)
+			{
+				output ~= " # error: " ~ e.msg;
+			}
 		}
 		output ~= "\n";
 	}

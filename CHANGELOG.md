@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- better error messages for `myrc install`
+
 ## [0.1.0] - 2024-01-24
 
 ### Added
@@ -15,3 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - experimental CLI output
 - symlinking functionality
 - selected [SDL](https://sdlang.org/) format for install file (`install.sdl`)
+
+[unreleased]: https://github.com/kucaahbe/myrc.d/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/kucaahbe/myrc.d/releases/tag/v0.1.0

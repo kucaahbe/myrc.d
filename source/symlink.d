@@ -79,6 +79,17 @@ struct Symlink {
 	 */
 	string link()
 	{
+		if (!source.exists)
+			throw new FileException(source.absolute, "file or directory does not exist");
+
+		auto parentDir = destination.parent;
+
+		if (!parentDir.exists)
+			throw new FileException(parentDir.absolute, "directory does not exist");
+
+		if (!parentDir.isDir)
+			throw new FileException(parentDir.absolute, "not a directory");
+
 		string backupPath;
 
 		if (destination.exists)
@@ -94,6 +105,7 @@ struct Symlink {
 	{
 		import std.file;
 		import std.path;
+		import test_file;
 
 		if (".test".exists) ".test".rmdirRecurse;
 		scope(exit) if (".test".exists) ".test".rmdirRecurse;
@@ -101,8 +113,8 @@ struct Symlink {
 		auto srcPath = ".test/app/source";
 		auto destPath = ".test/home/destination";
 
-		srcPath.dirName.mkdirRecurse;
-		destPath.dirName.mkdirRecurse;
+		TestFile(srcPath, "content").create;
+		TestFile(destPath).create;
 
 		auto link = Symlink(srcPath, destPath);
 		link.link();
@@ -138,6 +150,93 @@ struct Symlink {
 		assert(link.destination.absolute.isSymlink);
 		assert(link.destination.absolute.readLink == link.source.absolute);
 		assert(backup == destPathBackup, backup ~ "!=" ~ destPathBackup);
+	}
+
+	/** **fail case**: destination does not exist
+		* (raises [FileException] with corresponding message)
+		*/
+	unittest
+	{
+		import std.file;
+		import std.path;
+		import test_file;
+		import std.exception: collectExceptionMsg;
+
+		if (".test".exists) ".test".rmdirRecurse;
+		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+
+		immutable auto cwd = getcwd();
+		auto srcPath = ".test/app/source";
+		auto destPath = ".test/home/destination";
+
+		TestFile(srcPath, "content").create;
+		// only create .test/
+		TestFile(destPath.dirName).create;
+		assert(destPath.dirName.dirName.isDir);
+
+		auto link = Symlink(srcPath, destPath);
+
+		immutable auto exceptionMsg = collectExceptionMsg!FileException(link.link);
+		immutable auto expectedExceptionMsg = cwd ~ "/.test/home" ~ ": directory does not exist";
+
+		assert(exceptionMsg == expectedExceptionMsg, exceptionMsg ~ " != " ~ expectedExceptionMsg);
+	}
+
+	/** **fail case**: destination is not a directory
+	 * (raises [FileException] with corresponding message)
+	 */
+	unittest
+	{
+		import std.file;
+		import std.path;
+		import test_file;
+		import std.exception: collectExceptionMsg;
+
+		if (".test".exists) ".test".rmdirRecurse;
+		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+
+		auto srcPath = ".test/app/source";
+		auto destPath = ".test/home/destination";
+		immutable auto cwd = getcwd();
+
+		TestFile(srcPath, "src content").create;
+		// destination directory is a file
+		TestFile(destPath.dirName, "dest content").create;
+
+		auto link = Symlink(srcPath, destPath);
+
+		immutable auto exceptionMsg = collectExceptionMsg!FileException(link.link);
+		immutable auto expectedExceptionMsg = cwd ~ '/' ~ destPath.dirName ~ ": not a directory";
+
+		assert(exceptionMsg == expectedExceptionMsg, exceptionMsg ~ " != " ~ expectedExceptionMsg);
+	}
+
+	/** **fail case**: source does not exist
+	 * (raises [FileException] with corresponding message)
+	 */
+	unittest
+	{
+		import std.file;
+		import std.path;
+		import test_file;
+		import std.exception: collectExceptionMsg;
+
+		if (".test".exists) ".test".rmdirRecurse;
+		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+
+		auto srcPath = ".test/app/source";
+		auto destPath = ".test/home/destination";
+		immutable auto cwd = getcwd();
+
+		TestFile(destPath).create;
+		assert(destPath.dirName.isDir);
+
+		auto link = Symlink(srcPath, destPath);
+
+		immutable auto exceptionMsg = collectExceptionMsg!FileException(link.link);
+		immutable auto expectedExceptionMsg = cwd ~ "/.test/app/source" ~ ": file or directory does not exist";
+
+		assert(exceptionMsg == expectedExceptionMsg, exceptionMsg ~ " != " ~ expectedExceptionMsg);
 	}
 
 	/** Returns: _actual [Path] of the destination */

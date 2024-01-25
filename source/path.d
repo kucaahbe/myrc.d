@@ -1,5 +1,5 @@
 import std.array;
-import std.path: expandTilde, absolutePath, asNormalizedPath;
+import std.path: expandTilde, absolutePath, asNormalizedPath, dirName;
 import std.file: exists, isDir, isSymlink;
 
 /** represent path in a file system */
@@ -67,6 +67,24 @@ struct Path
 		TestFile(file_path, "content").create;
 
 		assert(path.exists);
+	}
+
+	/** Returns: [Path] representing _parent folder
+	 */
+	Path parent() inout
+	{
+		return Path(absolute.dirName);
+	}
+
+	/// returns parent folder as [Path]
+	unittest
+	{
+		import std.file;
+
+		immutable auto cwd = getcwd();
+
+		immutable auto path = Path(".test/app/source");
+		assert(path.parent.absolute == cwd ~ '/' ~ ".test/app");
 	}
 
 	/** Returns: true if [Path] is a directory in a file system */
