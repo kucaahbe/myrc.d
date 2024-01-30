@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
 - better error messages for `myrc install`
+
+### Fixed
+
+- backup file name (now contains timestamp to avoid clashes and increases
+  probability of backup success)
 
 ## [0.1.0] - 2024-01-24
 

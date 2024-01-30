@@ -1,6 +1,7 @@
 import std.file: readLink, isSymlink, symlink, rename, exists, FileException;
 import std.path: absolutePath, dirName, asNormalizedPath;
 import std.functional: memoize;
+import std.datetime.systime : SysTime, Clock;
 import std.array;
 import path;
 
@@ -74,8 +75,6 @@ struct Symlink {
 	/** creates symbolic _link in the file system
 	 * (creates backup of the destination if it exists)
 	 * Returns: path of the backup file if backup was created
-	 * Bugs: the name of the backup file is currently incorrect (must be
-	 * `filename.TIMESTAMP.bak`)
 	 */
 	string link()
 	{
@@ -130,6 +129,7 @@ struct Symlink {
 	{
 		import std.file;
 		import std.path;
+		import std.regex;
 		import test_file;
 
 		if (".test".exists) ".test".rmdirRecurse;
@@ -145,11 +145,13 @@ struct Symlink {
 		auto link = Symlink(srcPath, destPath);
 		immutable auto backup = link.link();
 
-		immutable auto destPathBackup = cwd ~ '/' ~ destPath ~ ".bak";
+		immutable auto destPathBackup = cwd ~ '/' ~ destPath ~ r".\d+T\d+.\d+.bak$";
 
 		assert(link.destination.absolute.isSymlink);
 		assert(link.destination.absolute.readLink == link.source.absolute);
-		assert(backup == destPathBackup, backup ~ "!=" ~ destPathBackup);
+		assert(backup.exists, `backup file "` ~ backup ~ `" does not exist`);
+		assert(backup.matchFirst(regex(destPathBackup)),
+				`backup file "` ~ backup ~ `" doesn't match /` ~ destPathBackup ~ `/`);
 	}
 
 	/** **fail case**: destination does not exist
@@ -285,17 +287,11 @@ struct Symlink {
 
 	private string backup()
 	{
-		auto backup = destination.absolute ~ ".bak";
-		try
-		{
-			rename(destination.absolute, backup);
-		} catch (FileException e)
-		{
-			import std.stdio: writeln;
-			writeln("DEBUG:", destination.absolute, " ", backup);
-			writeln(e.message, " ", e.errno);
-			backup = "FAILED BACKUP";
-		}
+		SysTime now = Clock.currTime();
+		auto backup = destination.absolute ~ '.' ~ now.toISOString() ~ ".bak";
+
+		rename(destination.absolute, backup);
+
 		return backup;
 	}
 }
