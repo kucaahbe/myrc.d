@@ -134,6 +134,8 @@ private void printStatus1(ref Config app_config)
 					output ~= symlink.actual.absolute;
 				} else if (symlink.destination.isDir) {
 					output ~= "is a directory";
+				} else {
+					output ~= "is a regular file";
 				}
 			} else {
 				output ~= "no such file or directory";
