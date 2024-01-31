@@ -51,7 +51,7 @@ jobs:
           tag="${{ steps.tag.outputs.tag }}"
           body="$(awk "/## \\[${tag#v}\\]/{flag=1;next}/## \\[/{flag=0}flag" CHANGELOG.md)"
 
-          gh release create "$tag" --draft --generate-notes --notes "$body" *.tar.gz
+          gh release create "$tag" --title "myrc $tag" --draft --generate-notes --notes "$body" *.tar.gz
 
       # the "$tag" value is incorrect for draft release (the correct one
       # returns previous gh release command)
