@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- status output: when destination is regular file
+- status output: when destination is symlink to non-existent file
+
 ## [0.2.0] - 2024-01-30
 
 ### Added
@@ -27,5 +32,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - symlinking functionality
 - selected [SDL](https://sdlang.org/) format for install file (`install.sdl`)
 
-[unreleased]: https://github.com/kucaahbe/myrc.d/compare/v0.1.0...HEAD
+[unreleased]: https://github.com/kucaahbe/myrc.d/compare/v0.2.0...HEAD
 [0.1.0]: https://github.com/kucaahbe/myrc.d/releases/tag/v0.1.0
+[0.2.0]: https://github.com/kucaahbe/myrc.d/releases/tag/v0.2.0
