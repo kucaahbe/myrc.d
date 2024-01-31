@@ -88,3 +88,4 @@ jobs:
       with:
         name: myrc-${{ matrix.os }}-${{ matrix.dc }}
         path: myrc
+        retention-days: 14
