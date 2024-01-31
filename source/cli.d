@@ -129,11 +129,11 @@ private void printStatus1(ref Config app_config)
 		} else {
 			output ~= " # ";
 			if (symlink.destination.exists) {
-				if (symlink.destination.isDir) {
-					output ~= "is a directory";
-				} else if (symlink.destination.isSymlink) {
+				if (symlink.destination.isSymlink) {
 					output ~= "-> ";
 					output ~= symlink.actual.absolute;
+				} else if (symlink.destination.isDir) {
+					output ~= "is a directory";
 				}
 			} else {
 				output ~= "no such file or directory";
