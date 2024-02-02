@@ -45,9 +45,8 @@ jobs:
       with:
         compiler: ${{ matrix.dc }}
 
-    - name: 'Restore dub packages cache'
-      id: dub-packages-restore
-      uses: actions/cache/restore@v4
+    - name: 'Cache dub packages'
+      uses: actions/cache@v4
       with:
         path: |
           ~/.dub
@@ -75,13 +74,6 @@ jobs:
         dub build --compiler=$DC --build=release-debug --config=$dub_configuration # --verbose
         dub lint --compiler=$DC --config=$dub_configuration # --verbose
         dub test --compiler=$DC --config=$dub_configuration # --verbose
-
-    - name: 'Cache dub packages'
-      uses: actions/cache/save@v4
-      with:
-        path: |
-          ~/.dub
-        key: ${{ steps.dub-packages-restore.outputs.cache-primary-key }}
 
     - name: 'Upload binary'
       uses: actions/upload-artifact@v4
