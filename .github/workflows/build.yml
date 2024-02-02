@@ -73,7 +73,7 @@ jobs:
 
         dub build --compiler=$DC --build=release-debug --config=$dub_configuration # --verbose
         dub lint --compiler=$DC --config=$dub_configuration # --verbose
-        dub test --compiler=$DC --config=$dub_configuration # --verbose
+        dub test --compiler=$DC --config=$dub_configuration --coverage # --verbose
 
     - name: 'Upload binary'
       uses: actions/upload-artifact@v4
@@ -81,3 +81,44 @@ jobs:
         name: myrc-${{ matrix.os }}-${{ matrix.dc }}
         path: myrc
         retention-days: 14
+
+    - name: 'Upload coverage'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage_${{ matrix.os }}_${{ matrix.dc }}
+        path: '*.lst'
+        retention-days: 14
+
+  summary-report:
+    name: 'Generate summary'
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: coverage*
+    - name: 'Generate coverage summary'
+      run: |
+        s="### Tests coverage\n\n"
+        for dir in $(ls -1d coverage_*); do
+          IFS='_' read -ra title <<< "$dir"
+          s+="#### ${title[1]} - ${title[2]}\n\n"
+          s+="<details>\n\n"
+
+          declare -A coverage_per_file
+          eval $(awk '/covered/ { split($1,f,/\//); print "coverage_per_file["f[2]"]="int($3) }' $dir/*.lst)
+          declare -i coverage=0
+          for v in "${coverage_per_file[@]}"; do coverage+=$v; done
+          coverage=$(($coverage/${#coverage_per_file[@]}))
+
+          s+="<summary>$coverage%</summary>\n\n"
+          s+="| File | Coverage |\n"
+          s+="| --- | --- |\n"
+          for k in "${!coverage_per_file[@]}"; do
+            s+="| $k | ${coverage_per_file[$k]}% |\n"
+          done
+          s+="\n</details>\n\n"
+        done
+        echo -e "$s"
+        echo -e "$s" >> $GITHUB_STEP_SUMMARY
