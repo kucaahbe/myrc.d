@@ -57,8 +57,9 @@ jobs:
         dub_configuration=application
 
         if [[ -x /usr/bin/xcodebuild ]]; then
-          /usr/bin/xcodebuild -version
-          xcode_version="$(/usr/bin/xcodebuild -version | awk '/Xcode/ { print int($2) }')"
+          xcode_version_raw="$(/usr/bin/xcodebuild -version)"
+          echo "::notice::$xcode_version_raw"
+          xcode_version="$(echo "$xcode_version_raw" | awk '/Xcode/ { print int($2) }')"
           if [[ $xcode_version -eq 15 ]]; then
             dub_configuration="application-xcode$xcode_version"
           else
