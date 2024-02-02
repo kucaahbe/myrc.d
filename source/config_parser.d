@@ -165,6 +165,43 @@ CFG";
 			warnings[1] ~ " is incorrect");
 }
 
+/// _config file can not be opened
+unittest
+{
+	import std.exception;
+	import std.regex;
+
+	auto config = Config();
+	auto path = Path("not_found");
+
+	immutable auto exceptionMsg = collectExceptionMsg!ConfigFileException(parse_config(path, config));
+	immutable auto expectedMsg = "config file " ~ path.absolute ~ " does not exist";
+
+	assert(exceptionMsg == expectedMsg, exceptionMsg ~ ` != ` ~ expectedMsg);
+}
+
+/// _config file content is not valid UTF
+unittest
+{
+	import std.file;
+	import std.exception;
+	import std.regex;
+	import test_file;
+
+	if (".test".exists) ".test".rmdirRecurse;
+	scope(exit) if (".test".exists) ".test".rmdirRecurse;
+
+	auto config = Config();
+	auto path = Path(".test/app/install.sdl");
+	ubyte[] not_utf_data = [207, 250, 237];
+	TestFile(path.absolute, not_utf_data).create;
+
+	immutable auto exceptionMsg = collectExceptionMsg!ConfigFileException(parse_config(path, config));
+
+	assert(matchFirst(exceptionMsg, "failed to read config file"),
+			`"` ~ exceptionMsg ~ `" doesn't match ~/failed to read config file/`);
+}
+
 private void processSDLNode(ref SDLNode node, ref Config config, ref string[] warnings)
 {
 	if (node.qualifiedName == INSTALL_DIRECTIVE) {
