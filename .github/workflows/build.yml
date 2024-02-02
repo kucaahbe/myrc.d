@@ -58,7 +58,6 @@ jobs:
 
         if [[ -x /usr/bin/xcodebuild ]]; then
           xcode_version_raw="$(/usr/bin/xcodebuild -version)"
-          echo "::notice::$xcode_version_raw"
           xcode_version="$(echo "$xcode_version_raw" | awk '/Xcode/ { print int($2) }')"
           if [[ $xcode_version -eq 15 ]]; then
             dub_configuration="application-xcode$xcode_version"
@@ -67,10 +66,10 @@ jobs:
           fi
         fi
 
-        # if [[ "${{ inputs.verbose_build }}" = "true" ]]; then
-        #   uname -a
-        #   $DC --version
-        # fi
+        echo "::group::Build info:"
+        echo "::notice::$xcode_version_raw"
+        echo "::notice::$($DC --version)($DC)"
+        echo "::endgroup::"
 
         dub build --compiler=$DC --build=release-debug --config=$dub_configuration # --verbose
         dub lint --compiler=$DC --config=$dub_configuration # --verbose
