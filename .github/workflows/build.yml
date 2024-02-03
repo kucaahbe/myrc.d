@@ -90,7 +90,7 @@ jobs:
         retention-days: 14
 
   summary-report:
-    name: 'Generate summary'
+    name: 'Tests report'
     needs: build
     if: always()
     runs-on: ubuntu-latest
