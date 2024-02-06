@@ -10,8 +10,12 @@ import symlink;
 import path;
 import config;
 
-private immutable INSTALL_DIRECTIVE = "install";
-private immutable LN_DIRECTIVE = "ln";
+/// config file directives
+enum Directive : string
+{
+    Install = "install",
+    Ln = "ln",
+}
 
 /** thrown when config file:
  * * not found
@@ -113,7 +117,7 @@ CFG";
 			`"` ~ exceptionMsg ~ `" doesn't match /failed to parse config file at/`);
 }
 
-/// _config file successfully parsed
+/// **_config file parsed**: ln directive
 unittest
 {
 	import std.file;
@@ -208,34 +212,32 @@ unittest
 
 private void processSDLNode(ref SDLNode node, ref Config config, ref string[] warnings)
 {
-	if (node.qualifiedName == INSTALL_DIRECTIVE) {
-		foreach (child_node ; node.children) {
-			switch (child_node.qualifiedName) {
-				case LN_DIRECTIVE:
-					auto values = child_node.values;
-					if (values.length == 2 && values.all!"a.isText") {
-						config.symlinks ~= [Symlink(
-								values[0].textValue,
-								values[1].textValue
-								)];
-					} else {
-						auto lnValues = values.map!((a) { return `"`~a.textValue~`"`; });
-						warnings ~= [
-							`ignoring incorrect directive: ` ~
-								LN_DIRECTIVE ~ " " ~
-								lnValues.join(" ") ~
-								` (must have 2 text values)`
-						];
-					}
-					break;
-				default:
-					warnings ~= [
-						`ignoring unknown "` ~
-							child_node.qualifiedName ~
-							`" directive`
-					];
-					break;
-			}
+	if (node.qualifiedName != Directive.Install) return;
+
+	foreach (child_node ; node.children) {
+		switch (child_node.qualifiedName) {
+			case Directive.Ln:
+				processLn(child_node.values, config, warnings);
+				break;
+			default:
+				warnings ~= [
+					`ignoring unknown "` ~ child_node.qualifiedName ~ `" directive`
+				];
+				break;
 		}
+	}
+}
+
+private void processLn(ref SDLValue[] values, ref Config config, ref string[] warnings)
+{
+	if (values.length == 2 && values.all!"a.isText") {
+		config.symlinks ~= [Symlink(values[0].textValue, values[1].textValue)];
+	} else {
+		auto lnValues = values.map!((a) { return `"`~a.textValue~`"`; });
+
+		warnings ~= [
+			`ignoring incorrect directive: ` ~ Directive.Ln ~ " " ~
+				lnValues.join(" ") ~ ` (must have 2 text values)`
+		];
 	}
 }
