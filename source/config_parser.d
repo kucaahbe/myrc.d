@@ -5,16 +5,18 @@ import std.utf: UTFException;
 import std.conv: to;
 import std.algorithm.searching: all;
 import std.algorithm.iteration: map;
-import std.array: join;
+import std.array: join, split;
 import symlink;
 import path;
 import config;
+import command;
 
 /// config file directives
 enum Directive : string
 {
     Install = "install",
     Ln = "ln",
+    Exec = "exec",
 }
 
 /** thrown when config file:
@@ -143,6 +145,43 @@ CFG";
 	assert(config.symlinks[0].destination.absolute == cwd~"/b");
 }
 
+/// **_config file parsed**: exec directive
+unittest
+{
+	import std.file;
+	import test_file;
+	import test_dir;
+
+	auto testDir = setupTestDir(__FILE__, __LINE__);
+	scope(exit) removeTestDir(testDir);
+
+	auto config = Config();
+	auto configFilePath = testDir ~ "/app/install.sdl";
+	auto configFileContent = q"CFG
+install {
+  exec `cmd "space  separated"    arguments` {
+    # cwd `~/some/dir` # machine idea
+
+    creates:file `~/some/dir/file`
+  }
+}
+CFG";
+	TestFile(configFilePath, configFileContent).create;
+
+	parse_config(Path(configFilePath), config);
+
+	assert(config.commands.length == 1);
+	const auto command = config.commands[0];
+	assert(command.name == "cmd");
+	assert(command.args == [`space  separated`, "arguments"]);
+
+	assert(command.outcomes.length == 1, `command.outcomes length is incorrect: `~command.outcomes.to!string);
+	assert(command.outcomes[0].type == CommandOutcome.File,
+			`command.outcomes[0].type is incorrect: `~command.outcomes[0].type.to!string);
+	assert(command.outcomes[0].path.absolute == Path("~/some/dir/file").absolute,
+			`command.outcomes[0].path is incorrect: `~command.outcomes[0].path.to!string);
+}
+
 /// _config file warnings
 unittest
 {
@@ -219,6 +258,9 @@ private void processSDLNode(ref SDLNode node, ref Config config, ref string[] wa
 			case Directive.Ln:
 				processLn(child_node.values, config, warnings);
 				break;
+			case Directive.Exec:
+				processExec(child_node, config, warnings);
+				break;
 			default:
 				warnings ~= [
 					`ignoring unknown "` ~ child_node.qualifiedName ~ `" directive`
@@ -240,4 +282,99 @@ private void processLn(ref SDLValue[] values, ref Config config, ref string[] wa
 				lnValues.join(" ") ~ ` (must have 2 text values)`
 		];
 	}
+}
+
+private void processExec(ref SDLNode node, ref Config config, ref string[] warnings)
+{
+	if (node.values.length == 0 ||
+			!node.values[0].isText ||
+			node.values[0].textValue.length == 0) {
+		warnings ~= [
+			`ignoring incorrect directive: ` ~ Directive.Exec
+				~ ` (specify a command to execute)`
+		];
+		return;
+	}
+
+	auto rawCommand = parseCmd(node.values[0].textValue);
+	auto command = new Command(rawCommand[0], rawCommand[1..$]);
+
+	foreach (cmdNode ; node.children) {
+		switch (cmdNode.namespace) {
+			case "creates":
+				switch (cmdNode.name) {
+					case "file":
+						if (cmdNode.values.length == 1 && cmdNode.values[0].isText) {
+							auto path = Path(cmdNode.values[0].textValue);
+							command.outcomes ~= new CommandOutcome(CommandOutcome.File, path);
+						} else {
+							warnings ~= [
+								`ignoring incorrect "`~cmdNode.qualifiedName~`" directive: ` ~ cmdNode.values.to!string
+									~ ` (must have 1 text value)`
+							];
+						}
+						break;
+					default:
+						warnings ~= [
+							`ignoring unknown "` ~ cmdNode.qualifiedName ~ `" directive`
+						];
+						break;
+				}
+				break;
+			default:
+				warnings ~= [
+					`ignoring unknown "` ~ cmdNode.qualifiedName ~ `" directive`
+				];
+				break;
+		}
+	}
+
+	config.commands ~= [command];
+}
+
+private string[] parseCmd(string cmd)
+{
+	string[] command;
+	size_t i = 0;
+
+	//import std.stdio;
+
+	auto consumeSpace = () { while (i < cmd.length && cmd[i] == ' ') i++; };
+	auto consumeArgument = (char sep) {
+		size_t start = i;
+		while (i < cmd.length && cmd[i] != sep) {
+			//writefln("cmd[%s] = %s", i, cmd[i]);
+			i++;
+		}
+
+		if (i == cmd.length) {
+			//if (cmd[i] == sep)
+			//	throw new ConfigFileException("unterminated string: " ~ cmd);
+			return cmd[start..$];
+		} else {
+			//writefln("argument i: %s, cmd[i]=%s `%s` (sep=%s)", i, cmd[i], cmd[start..i], sep);
+			return cmd[start..i];
+		}
+	};
+
+	while (i < cmd.length) {
+		consumeSpace();
+		switch (cmd[i]) {
+			case '"':
+				i++;
+				command ~= consumeArgument('"');
+				i++;
+				break;
+			case '\'':
+				i++;
+				command ~= consumeArgument('\'');
+				i++;
+				break;
+			default:
+				command ~= consumeArgument(' ');
+				break;
+		}
+	}
+
+	return command;
 }

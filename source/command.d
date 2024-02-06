@@ -1,4 +1,5 @@
 import std.process;
+import path;
 
 /** represents a shell command */
 class Command {
@@ -8,6 +9,8 @@ class Command {
 	string[] args;
 	/** command _output */
 	string output;
+	/** file system artifacts command expected to create */
+	CommandOutcome[] outcomes;
 
 	/** creates a new command with the given _name and arguments
 	 * Params:
@@ -85,4 +88,35 @@ class Command {
 
 	private bool invoke_status = false;
 	private bool run = false;
+}
+
+/** represents a file system artifact, created by Command */
+class CommandOutcome
+{
+	/** type of the outcome */
+	enum
+	{
+		/** file */
+		File,
+		/** directory */
+		Directory,
+		/** symbolic link */
+		Symlink
+	}
+
+	/** type of the artifact */
+	int type;
+	/** Path to the artifact */
+	Path path;
+
+	/** creates a new outcome with the given type and path
+	 * Params:
+	 * 		type = type of the artifact
+	 * 		path = path to the artifact
+	 */
+	this(int type, Path path)
+	{
+		this.type = type;
+		this.path = path;
+	}
 }
