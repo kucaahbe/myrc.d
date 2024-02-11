@@ -1,18 +1,15 @@
 .dub
 /dub.settings.json
+
+# per-directory dmd configuration:
 /dmd.conf
+
+# documentation files:
 docs.json
 __dummy.html
 docs/
-/myrc
-myrc.so
-myrc.dylib
-myrc.dll
-myrc.a
-myrc.lib
-myrc-test-*
-*.exe
-*.pdb
-*.o
-*.obj
+
+# generated binaries:
+/myrc*
+# code coverage files:
 *.lst

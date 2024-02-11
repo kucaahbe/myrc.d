@@ -54,26 +54,23 @@ jobs:
 
     - name: 'dub build/lint/test'
       run: |
-        dub_configuration=application
-
+        echo "::group::Build info:"
         if [[ -x /usr/bin/xcodebuild ]]; then
           xcode_version_raw="$(/usr/bin/xcodebuild -version)"
           xcode_version="$(echo "$xcode_version_raw" | awk '/Xcode/ { print int($2) }')"
           if [[ $xcode_version -eq 15 ]]; then
-            dub_configuration="application-xcode$xcode_version"
-          else
-            dub_configuration="application-xcode-older"
+            # https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes#Known-Issues
+            export DFLAGS="-L-ld_classic"
           fi
+          echo "::notice title=${{ matrix.os }} Xcode version::$xcode_version_raw"
         fi
-
-        echo "::group::Build info:"
-        echo "::notice::$xcode_version_raw"
-        echo "::notice::$($DC --version)($DC)"
+        compiler_version="$($DC --version)"
+        echo "::notice title=${{ matrix.os }}/${{ matrix.dc }} compiler::$compiler_version"
         echo "::endgroup::"
 
-        dub build --compiler=$DC --build=release-debug --config=$dub_configuration # --verbose
-        dub lint --compiler=$DC --config=$dub_configuration # --verbose
-        dub test --compiler=$DC --config=$dub_configuration --coverage # --verbose
+        dub build --compiler=$DC --build=release-debug # --verbose
+        dub lint --compiler=$DC # --verbose
+        dub test --compiler=$DC --coverage # --verbose
 
     - name: 'Upload binary'
       uses: actions/upload-artifact@v4

@@ -11,18 +11,5 @@ mainSourceFile "source/main.d"
 dependency "sdlite" version="~>1.2.0"
 
 configuration "application" {
-    platforms "linux"
     targetType "executable"
-}
-
-configuration "application-xcode15" {
-    platforms "osx-x86_64"
-    targetType "executable"
-    lflags "-ld_classic"
-}
-
-configuration "application-xcode-older" {
-    platforms "osx-x86_64"
-    targetType "executable"
-    # lflags "-ld_classic"
 }
