@@ -92,12 +92,13 @@ unittest
 	import std.exception;
 	import std.regex;
 	import test_file;
+	import test_dir;
 
-	if (".test".exists) ".test".rmdirRecurse;
-	scope(exit) if (".test".exists) ".test".rmdirRecurse;
+	auto testDir = setupTestDir(__FILE__, __LINE__);
+	scope(exit) removeTestDir(testDir);
 
 	auto config = Config();
-	auto configFilePath = ".test/app/install.sdl";
+	auto configFilePath = testDir ~ "/app/install.sdl";
 	auto configFileContent = q"CFG
 install {
 # parse error here:
@@ -117,13 +118,14 @@ unittest
 {
 	import std.file;
 	import test_file;
+	import test_dir;
 
-	if (".test".exists) ".test".rmdirRecurse;
-	scope(exit) if (".test".exists) ".test".rmdirRecurse;
+	auto testDir = setupTestDir(__FILE__, __LINE__);
+	scope(exit) removeTestDir(testDir);
 
 	immutable auto cwd = getcwd();
 	auto config = Config();
-	auto configFilePath = ".test/app/install.sdl";
+	auto configFilePath = testDir ~ "/app/install.sdl";
 	auto configFileContent = q"CFG
 install {
 	ln `a` `b`
@@ -142,12 +144,13 @@ unittest
 {
 	import std.file;
 	import test_file;
+	import test_dir;
 
-	if (".test".exists) ".test".rmdirRecurse;
-	scope(exit) if (".test".exists) ".test".rmdirRecurse;
+	auto testDir = setupTestDir(__FILE__, __LINE__);
+	scope(exit) removeTestDir(testDir);
 
 	auto config = Config();
-	auto configFilePath = ".test/app/install.sdl";
+	auto configFilePath = testDir ~ "/app/install.sdl";
 	auto configFileContent = q"CFG
 install {
 	ln "too" "many" "params"
@@ -187,12 +190,13 @@ unittest
 	import std.exception;
 	import std.regex;
 	import test_file;
+	import test_dir;
 
-	if (".test".exists) ".test".rmdirRecurse;
-	scope(exit) if (".test".exists) ".test".rmdirRecurse;
+	auto testDir = setupTestDir(__FILE__, __LINE__);
+	scope(exit) removeTestDir(testDir);
 
 	auto config = Config();
-	auto path = Path(".test/app/install.sdl");
+	auto path = Path(testDir ~ "/app/install.sdl");
 	ubyte[] not_utf_data = [207, 250, 237];
 	TestFile(path.absolute, not_utf_data).create;
 

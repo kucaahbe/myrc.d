@@ -55,11 +55,12 @@ struct Path
 		import std.file;
 		import std.process;
 		import test_file;
+		import test_dir;
 
-		if (".test".exists) ".test".rmdirRecurse;
-		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+		auto testDir = setupTestDir(__FILE__, __LINE__);
+		scope(exit) removeTestDir(testDir);
 
-		immutable auto file_path = ".test/app/source";
+		immutable auto file_path = testDir ~ "/app/source";
 
 		const auto path = Path(file_path);
 		assert(!path.exists);
@@ -99,11 +100,12 @@ struct Path
 		import std.file;
 		import std.process;
 		import test_file;
+		import test_dir;
 
-		if (".test".exists) ".test".rmdirRecurse;
-		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+		auto testDir = setupTestDir(__FILE__, __LINE__);
+		scope(exit) removeTestDir(testDir);
 
-		immutable auto dir_path = ".test/app";
+		immutable auto dir_path = testDir ~ "/app";
 
 		const auto path = Path(dir_path);
 		assert(!path.isDir);
@@ -125,11 +127,12 @@ struct Path
 		import std.file;
 		import std.process;
 		import test_file;
+		import test_dir;
 
-		if (".test".exists) ".test".rmdirRecurse;
-		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+		auto testDir = setupTestDir(__FILE__, __LINE__);
+		scope(exit) removeTestDir(testDir);
 
-		immutable auto dir_path = ".test/app";
+		immutable auto dir_path = testDir ~ "/app";
 
 		const auto path = Path(dir_path);
 		assert(!path.isSymlink);

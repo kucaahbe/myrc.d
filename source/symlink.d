@@ -27,9 +27,13 @@ struct Symlink {
 	unittest
 	{
 		import std.file;
+		import test_dir;
 
-		immutable auto srcPath = ".test/app/source";
-		immutable auto destPath = ".test/home/destination";
+		auto testDir = setupTestDir(__FILE__, __LINE__);
+		scope(exit) removeTestDir(testDir);
+
+		immutable auto srcPath = testDir ~ "/app/source";
+		immutable auto destPath = testDir ~ "/home/destination";
 		immutable auto cwd = getcwd();
 
 		const auto link = Symlink(srcPath, destPath);
@@ -56,12 +60,13 @@ struct Symlink {
 	{
 		import std.file;
 		import test_file;
+		import test_dir;
 
-		if (".test".exists) ".test".rmdirRecurse;
-		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+		auto testDir = setupTestDir(__FILE__, __LINE__);
+		scope(exit) removeTestDir(testDir);
 
-		auto srcPath = ".test/app/source";
-		auto destPath = ".test/home/destination";
+		auto srcPath = testDir ~ "/app/source";
+		auto destPath = testDir ~ "/home/destination";
 		TestFile(srcPath, "content").create;
 		TestFile(destPath).create;
 
@@ -105,12 +110,13 @@ struct Symlink {
 		import std.file;
 		import std.path;
 		import test_file;
+		import test_dir;
 
-		if (".test".exists) ".test".rmdirRecurse;
-		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+		auto testDir = setupTestDir(__FILE__, __LINE__);
+		scope(exit) removeTestDir(testDir);
 
-		auto srcPath = ".test/app/source";
-		auto destPath = ".test/home/destination";
+		auto srcPath = testDir ~ "/app/source";
+		auto destPath = testDir ~ "/home/destination";
 
 		TestFile(srcPath, "content").create;
 		TestFile(destPath).create;
@@ -131,12 +137,13 @@ struct Symlink {
 		import std.path;
 		import std.regex;
 		import test_file;
+		import test_dir;
 
-		if (".test".exists) ".test".rmdirRecurse;
-		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+		auto testDir = setupTestDir(__FILE__, __LINE__);
+		scope(exit) removeTestDir(testDir);
 
-		auto srcPath = ".test/app/source";
-		auto destPath = ".test/home/destination";
+		auto srcPath = testDir ~ "/app/source";
+		auto destPath = testDir ~ "/home/destination";
 		immutable auto cwd = getcwd();
 
 		TestFile(srcPath, "src content").create;
@@ -161,25 +168,26 @@ struct Symlink {
 	{
 		import std.file;
 		import std.path;
-		import test_file;
 		import std.exception: collectExceptionMsg;
+		import test_file;
+		import test_dir;
 
-		if (".test".exists) ".test".rmdirRecurse;
-		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+		auto testDir = setupTestDir(__FILE__, __LINE__);
+		scope(exit) removeTestDir(testDir);
 
 		immutable auto cwd = getcwd();
-		auto srcPath = ".test/app/source";
-		auto destPath = ".test/home/destination";
+		auto srcPath = testDir ~ "/app/source";
+		auto destPath = testDir ~ "/home/destination";
 
 		TestFile(srcPath, "content").create;
-		// only create .test/
+		// only create testDir ~ "/home"
 		TestFile(destPath.dirName).create;
 		assert(destPath.dirName.dirName.isDir);
 
 		auto link = Symlink(srcPath, destPath);
 
 		immutable auto exceptionMsg = collectExceptionMsg!FileException(link.link);
-		immutable auto expectedExceptionMsg = cwd ~ "/.test/home" ~ ": directory does not exist";
+		immutable auto expectedExceptionMsg = cwd ~ '/' ~ testDir ~ "/home" ~ ": directory does not exist";
 
 		assert(exceptionMsg == expectedExceptionMsg, exceptionMsg ~ " != " ~ expectedExceptionMsg);
 	}
@@ -191,14 +199,15 @@ struct Symlink {
 	{
 		import std.file;
 		import std.path;
-		import test_file;
 		import std.exception: collectExceptionMsg;
+		import test_file;
+		import test_dir;
 
-		if (".test".exists) ".test".rmdirRecurse;
-		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+		auto testDir = setupTestDir(__FILE__, __LINE__);
+		scope(exit) removeTestDir(testDir);
 
-		auto srcPath = ".test/app/source";
-		auto destPath = ".test/home/destination";
+		auto srcPath = testDir ~ "/app/source";
+		auto destPath = testDir ~ "/home/destination";
 		immutable auto cwd = getcwd();
 
 		TestFile(srcPath, "src content").create;
@@ -220,14 +229,15 @@ struct Symlink {
 	{
 		import std.file;
 		import std.path;
-		import test_file;
 		import std.exception: collectExceptionMsg;
+		import test_file;
+		import test_dir;
 
-		if (".test".exists) ".test".rmdirRecurse;
-		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+		auto testDir = setupTestDir(__FILE__, __LINE__);
+		scope(exit) removeTestDir(testDir);
 
-		auto srcPath = ".test/app/source";
-		auto destPath = ".test/home/destination";
+		auto srcPath = testDir ~ "/app/source";
+		auto destPath = testDir ~ "/home/destination";
 		immutable auto cwd = getcwd();
 
 		TestFile(destPath).create;
@@ -236,7 +246,7 @@ struct Symlink {
 		auto link = Symlink(srcPath, destPath);
 
 		immutable auto exceptionMsg = collectExceptionMsg!FileException(link.link);
-		immutable auto expectedExceptionMsg = cwd ~ "/.test/app/source" ~ ": file or directory does not exist";
+		immutable auto expectedExceptionMsg = cwd ~ '/' ~ testDir ~ "/app/source" ~ ": file or directory does not exist";
 
 		assert(exceptionMsg == expectedExceptionMsg, exceptionMsg ~ " != " ~ expectedExceptionMsg);
 	}
@@ -257,12 +267,13 @@ struct Symlink {
 		import std.file;
 		import std.path;
 		import test_file;
+		import test_dir;
 
-		if (".test".exists) ".test".rmdirRecurse;
-		scope(exit) if (".test".exists) ".test".rmdirRecurse;
+		auto testDir = setupTestDir(__FILE__, __LINE__);
+		scope(exit) removeTestDir(testDir);
 
-		auto srcPath = ".test/app/source";
-		auto destPath = ".test/home/destination";
+		auto srcPath = testDir ~ "/app/source";
+		auto destPath = testDir ~ "/home/destination";
 		immutable auto cwd = getcwd();
 
 		TestFile(srcPath, "src content").create;
