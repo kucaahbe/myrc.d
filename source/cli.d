@@ -1,7 +1,8 @@
 import std.file: getcwd;
 import std.format: format;
+import std.array: split, join;
 import std.algorithm.iteration: map, filter;
-import std.algorithm.searching: maxElement;
+import std.algorithm.searching: all, maxElement;
 import std.stdio;
 import core.stdc.stdlib;
 import std.conv: to;
@@ -37,6 +38,16 @@ void cli_status(ref string[] args, ref Config app_config)
 void cli_install(ref Config app_config)
 {
 	string output = getcwd ~ " install:\n";
+
+	foreach (command ; app_config.commands) {
+		if (command.outcomes.length > 0 && command.outcomes.all!(o => o.ok)) {
+			output ~= "+ `"~command.inspect~"`\n";
+		} else {
+			output ~= "exec `"~command.inspect~"...`\n";
+			command.invoke();
+			output ~= "# `"~command.output.split('\n').join("\n#  ")~"`\n";
+		}
+	}
 
 	foreach (symlink ; app_config.symlinks) {
 		if (!symlink.source.exists) {
@@ -118,6 +129,19 @@ private void printStatus1(ref Config app_config)
 	//immutable auto max_src_length = to!string(symlinksLengths.empty ? 0 : symlinksLengths.maxElement);
 
 	string output = getcwd ~ ":\n";
+
+	foreach (command ; app_config.commands) {
+		if (command.outcomes.all!(o => o.ok)) {
+			output ~= "+ `"~command.inspect~"`\n";
+		} else {
+			output ~= "- `"~command.inspect~"`\n";
+			foreach (outcome ; command.outcomes) {
+				if (!outcome.ok) {
+					output ~= "  # " ~ outcome.path.absolute ~ " does not exist\n";
+				}
+			}
+		}
+	}
 
 	foreach (symlink ; app_config.symlinks) {
 		output ~= symlink.ok ? "+ " : "- ";

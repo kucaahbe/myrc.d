@@ -1,6 +1,6 @@
 import std.array;
 import std.path: expandTilde, absolutePath, asNormalizedPath, dirName;
-import std.file: exists, isDir, isSymlink;
+import std.file: exists, isFile, isDir, isSymlink;
 
 /** represent path in a file system */
 struct Path
@@ -86,6 +86,52 @@ struct Path
 
 		immutable auto path = Path(".test/app/source");
 		assert(path.parent.absolute == cwd ~ '/' ~ ".test/app");
+	}
+
+	/** Returns: true if [Path] is a regular file in a file system */
+	bool isFile() inout
+	{
+		return exists && absolute.isFile;
+	}
+
+	/// returns true if [absolute] exists and is a file
+	unittest
+	{
+		import std.file;
+		import std.process;
+		import test_file;
+		import test_dir;
+
+		auto testDir = setupTestDir(__FILE__, __LINE__);
+		scope(exit) removeTestDir(testDir);
+
+		immutable auto file_path = testDir ~ "/file";
+
+		const auto path = Path(file_path);
+		assert(!path.isFile);
+		TestFile(file_path, "content").create;
+		assert(path.isFile);
+	}
+
+	/// returns true if [absolute] exists and is a file
+	unittest
+	{
+		import std.file;
+		import std.process;
+		import test_file;
+		import test_dir;
+
+		auto testDir = setupTestDir(__FILE__, __LINE__);
+		scope(exit) removeTestDir(testDir);
+
+		immutable auto file_path = testDir ~ "/file";
+
+		const auto path = Path(file_path);
+		assert(!path.isFile);
+
+		TestFile(file_path, "content").create;
+
+		assert(path.isFile);
 	}
 
 	/** Returns: true if [Path] is a directory in a file system */

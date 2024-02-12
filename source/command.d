@@ -1,3 +1,4 @@
+import std.array: join;
 import std.process;
 import path;
 
@@ -20,6 +21,18 @@ class Command {
 	this(string name, string[] args) {
 		this.name = name;
 		this.args = args;
+	}
+
+	/** returns string representation of the command
+		(command name and arguments) */
+	string inspect() {
+		return name ~ ' ' ~ args.join(' ');
+	}
+
+	/// string representation of [Command]
+	unittest {
+		auto cmd = new Command("echo", ["12", "3"]);
+		assert(cmd.inspect == "echo 12 3");
 	}
 
 	/** invokes the command */
@@ -118,5 +131,54 @@ class CommandOutcome
 	{
 		this.type = type;
 		this.path = path;
+	}
+
+	/** test if outcome criteria is satisfied
+		* Returns: true if the outcome exists */
+	bool ok() {
+		switch (type) {
+			case File:
+				return path.isFile;
+			case Directory:
+				return path.isDir;
+			case Symlink:
+				return path.isSymlink;
+			default:
+				return false;
+		}
+	}
+
+	/// returns true if the outcome exists
+	unittest {
+		import std.file;
+		import std.process;
+		import std.conv;
+		import test_file;
+		import test_dir;
+
+		auto testDir = setupTestDir(__FILE__, __LINE__);
+		scope(exit) removeTestDir(testDir);
+
+		auto file = testDir ~ "/file";
+		auto dir = testDir ~ "/dir";
+		auto symlink = testDir ~ "/symlink";
+
+		auto path = Path(file);
+		auto outcome = new CommandOutcome(CommandOutcome.File, path);
+		assert(!outcome.ok);
+		TestFile(file, "content").create();
+		assert(outcome.ok);
+
+		path = Path(dir);
+		outcome = new CommandOutcome(CommandOutcome.Directory, path);
+		assert(!outcome.ok);
+		dir.mkdir;
+		assert(outcome.ok);
+
+		path = Path(symlink);
+		outcome = new CommandOutcome(CommandOutcome.Symlink, path);
+		assert(!outcome.ok);
+		file.symlink(symlink);
+		assert(outcome.ok);
 	}
 }
