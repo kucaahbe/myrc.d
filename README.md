@@ -2,6 +2,11 @@
 
 Symlinking CLI tool for dotfiles (or any other configuration files organized in a directory).
 
+* [Usage](#usage)
+* [Install](#install)
+  * [Build](#build)
+    * [Build issues](#build-issues)
+
 ## Usage
 
 In the directory from where the app is started, the `install.sdl` manifest file is required: there should be specified
